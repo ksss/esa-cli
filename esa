@@ -16,7 +16,7 @@ require 'io/console'
 require 'esa'
 
 class CLI
-  Page = Struct.new(:page, :par_page)
+  Page = Struct.new(:page, :per_page)
 
   attr_reader :client
 

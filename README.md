@@ -1,6 +1,8 @@
 esa-cli
 =======
 
+![img](https://raw.githubusercontent.com/ksss/esa-cli/master/demo.gif)
+
 ### Env
 
 - ESA_ACCESS_TOKEN: Your esa access token

@@ -10,5 +10,7 @@ esa-cli
 
 - j: Down
 - k: Up
+- l: Next page
+- h: Back page
 - Enter: Show a post body
 - q: Quit

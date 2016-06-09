@@ -1,0 +1,71 @@
+#!/usr/bin/env ruby
+# Author: ksss <co000ri@gmail.com>
+# License: MIT
+# Env:
+#   ESA_ACCESS_TOKEN: Your esa access token
+#   ESA_CURRENT_TEAM: Your esa team name (default docs)
+# Key:
+#       j: Down
+#       k: Up
+#   Enter: Show a post body
+#       q: Quit
+
+require 'io/console'
+require 'esa'
+require 'json'
+
+class CLI
+  attr_reader :client
+
+  def initialize(client)
+    @client = client
+  end
+
+  def run(argv)
+    posts = client.posts(per_page: 40).body["posts"]
+    lines = posts.map do |post|
+      sprintf("%6s: %s", post["number"], post["name"])
+    end
+    off = 0
+    while true
+      w, h = STDIN.winsize
+      n = 0
+
+      lines.each_with_index do |line, i|
+        if off == i
+          puts "\e[30;47m#{line}\e[0m\n"
+        else
+          puts line
+        end
+        n += 1
+        break if h <= n
+      end
+
+      print "\x1b[#{n}A"
+
+      ch = $stdin.getch.ord
+      case ch
+      when 0x6a # j
+        off += 1 if off+1 < lines.length
+      when 0x6b # k
+        off -= 1 if 0 < off
+      when 0x0d # Enter
+        post = posts[off]
+        IO.popen("less -R", "w") do |io|
+          io.puts post["url"]
+          io.puts "\e[1m#{post["full_name"]}\e[m"
+          io.puts
+          io.puts post["body_md"]
+        end
+      when 0x71 # q
+        return
+      end
+    end
+  end
+end
+
+client = Esa::Client.new(
+  access_token: ENV["ESA_ACCESS_TOKEN"],
+  current_team: ENV["ESA_CURRENT_TEAM"] || "docs"
+)
+CLI.new(client).run(ARGV)

@@ -15,33 +15,52 @@ require 'esa'
 require 'json'
 
 class CLI
+  Page = Struct.new(:page, :par_page)
+
   attr_reader :client
 
   def initialize(client)
     @client = client
   end
 
-  def run(argv)
-    posts = client.posts(per_page: 40).body["posts"]
-    lines = posts.map do |post|
-      sprintf("%6s: %s", post["number"], post["name"])
+  def posts(opts = {})
+    res = client.posts(opts.to_h)
+    unless res.status == 200
+      raise "#{res.status} #{res.body['message']}"
     end
-    off = 0
+    res.body["posts"]
+  end
+
+  HELP_LINE = "j:down, k:up, l: next, h: back, Enter:show"
+
+  def run(argv)
+    page = Page.new(1, 30)
+    posts = lines = off = nil
+    refresh = -> {
+      posts = posts(page)
+      lines = posts.map do |post|
+        sprintf("%6s: %s", post["number"], post["name"])
+      end
+      off = 0
+    }
+    refresh.call
     while true
-      w, h = STDIN.winsize
+      h, w = STDIN.winsize
       n = 0
 
+      print "\e[0J".freeze
+      buf = "\e[1m#{HELP_LINE}\e[m\n"
       lines.each_with_index do |line, i|
         if off == i
-          puts "\e[30;47m#{line}\e[0m\n"
+          buf << "\e[30;47m#{line}\e[0m\n"
         else
-          puts line
+          buf << "#{line}\n"
         end
         n += 1
         break if h <= n
       end
-
-      print "\x1b[#{n}A"
+      buf << "\e[#{n+1}A"
+      print buf
 
       ch = $stdin.getch.ord
       case ch
@@ -49,6 +68,12 @@ class CLI
         off += 1 if off+1 < lines.length
       when 0x6b # k
         off -= 1 if 0 < off
+      when 0x6c # l
+        page.page += 1
+        refresh.call
+      when 0x68 # h
+        page.page -= 1 if 0 < page.page
+        refresh.call
       when 0x0d # Enter
         post = posts[off]
         IO.popen("less -R", "w") do |io|

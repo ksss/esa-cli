@@ -32,7 +32,7 @@ class CLI
     res.body["posts"]
   end
 
-  HELP_LINE = "j:down, k:up, l: next, h: back, Enter:show"
+  HELP_LINE = "j:down, k:up, l: next, h: back, Enter:show, q: quit"
 
   def run(argv)
     page = Page.new(1, 30)

@@ -1,10 +1,6 @@
 esa-cli
 =======
 
-# Env
-
-- ESA_ACCESS_TOKEN: Your esa access token
-
 # Commands
 
 ## view
@@ -34,3 +30,7 @@ request to esa API and print json response
 $ esa api posts "q=category:2016/06 title:日報"
 {...}
 ```
+
+# Env
+
+- ESA_ACCESS_TOKEN: Your esa access token

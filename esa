@@ -1,16 +1,6 @@
 #!/usr/bin/env ruby
 # Author: ksss <co000ri@gmail.com>
 # License: MIT
-# Env:
-#   ESA_ACCESS_TOKEN: Your esa access token
-#   ESA_CURRENT_TEAM: Your esa team name (default docs)
-# Key:
-#       j: Down
-#       k: Up
-#       l: Next page
-#       h: Back page
-#   Enter: Show a post body
-#       q: Quit
 
 require 'io/console'
 require 'esa'
@@ -24,23 +14,24 @@ class CLI
     @client = client
   end
 
-  def posts(opts = {})
-    res = client.posts(opts.to_h)
-    unless res.status == 200
-      raise "#{res.status} #{res.body['message']}"
-    end
-    res.body["posts"]
-  end
-
   HELP_LINE = "j:down, k:up, l: next, h: back, Enter:show, q: quit"
 
   def run(argv)
+    public_send(argv.shift, *argv)
+  end
+
+  def api(*args)
+    puts @client.public_send(*args).body.to_json
+  end
+
+  def view(team)
+    @client.current_team = team
     cache = []
     page = Page.new(1, 30)
 
     posts = lines = off = nil
     refresh = lambda do
-      cache[page.page] = posts(page) if cache[page.page].nil?
+      cache[page.page] = fetch_posts(page) if cache[page.page].nil?
       posts = cache[page.page]
       lines = posts.map do |post|
         sprintf("%6s: %s", post["number"], post["name"])
@@ -86,10 +77,20 @@ class CLI
       end
     end
   end
+
+  private
+
+  def fetch_posts(opts = {})
+    res = client.posts(opts.to_h)
+    unless res.status == 200
+      raise "#{res.status} #{res.body['message']}"
+    end
+    res.body["posts"]
+  end
 end
 
 client = Esa::Client.new(
   access_token: ENV["ESA_ACCESS_TOKEN"],
-  current_team: ENV["ESA_CURRENT_TEAM"] || "docs"
+  current_team: nil,
 )
 CLI.new(client).run(ARGV)

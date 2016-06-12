@@ -1,12 +1,21 @@
 esa-cli
 =======
 
-![img](https://raw.githubusercontent.com/ksss/esa-cli/master/demo.gif)
-
-### Env
+# Env
 
 - ESA_ACCESS_TOKEN: Your esa access token
-- ESA_CURRENT_TEAM: Your esa team name (default docs)
+
+# Commands
+
+## view
+
+CLI application to view posts (default)
+
+```
+$ esa view [team]
+```
+
+![img](https://raw.githubusercontent.com/ksss/esa-cli/master/demo.gif)
 
 ### Key
 
@@ -16,3 +25,12 @@ esa-cli
 - h: Back page
 - Enter: Show a post body
 - q: Quit
+
+## api
+
+request to esa API and print json response
+
+```
+$ esa api posts "q=category:2016/06 title:日報"
+{...}
+```

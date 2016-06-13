@@ -39,8 +39,9 @@ class CLI
     refresh = lambda do
       cache[page.page] = fetch_posts(page) if cache[page.page].nil?
       posts = cache[page.page]
+      max_screen_name_len = posts.map { |post| post["created_by"]["screen_name"].length }.max
       lines = posts.map do |post|
-        sprintf("%6s: %s", post["number"], post["name"])
+        sprintf("%#{max_screen_name_len}s: %s", post["created_by"]["screen_name"], post["name"])
       end
       off = 0
     end

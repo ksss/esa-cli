@@ -17,15 +17,15 @@ class CLI
   HELP_LINE = "j:down, k:up, l: next, h: back, Enter:show, q: quit"
 
   def run(argv)
-    public_send(argv.shift, *argv)
+    public_send(*argv)
   end
 
   def api(*args)
     puts @client.public_send(*args).body.to_json
   end
 
-  def view(team)
-    @client.current_team = team
+  def view(*args)
+    @client.current_team = args.shift if args.empty?.!
     cache = []
     page = Page.new(1, 30)
 
@@ -91,6 +91,6 @@ end
 
 client = Esa::Client.new(
   access_token: ENV["ESA_ACCESS_TOKEN"],
-  current_team: nil,
+  current_team: ENV["ESA_CURRENT_TEAM"],
 )
 CLI.new(client).run(ARGV)

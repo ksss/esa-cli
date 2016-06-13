@@ -34,3 +34,4 @@ $ esa api posts "q=category:2016/06 title:日報"
 # Env
 
 - ESA_ACCESS_TOKEN: Your esa access token
+- ESA_CURRENT_TEAM: Your esa team name

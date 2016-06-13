@@ -5,6 +5,12 @@
 require 'io/console'
 require 'esa'
 
+class String
+  def to_bold
+    "\e[1m#{self}\e[m"
+  end
+end
+
 class CLI
   Page = Struct.new(:page, :per_page)
 
@@ -38,10 +44,19 @@ class CLI
       end
       off = 0
     end
+    decorate = lambda do |md|
+      md.each_line.map do |line|
+        if /^#/ =~ line
+          line.to_bold
+        else
+          line
+        end
+      end.join("\n")
+    end
     refresh.call
     while true
       print "\e[0J".freeze
-      buf = "\e[1m#{HELP_LINE}\e[m\n"
+      buf = "#{HELP_LINE.to_bold}\n"
       lines.each_with_index do |line, i|
         buf << if off == i
                  "\e[30;47m#{line}\e[0m\n"
@@ -68,9 +83,9 @@ class CLI
         post = posts[off]
         IO.popen("less -R", "w") do |io|
           io.puts post["url"]
-          io.puts "\e[1m#{post["full_name"]}\e[m"
+          io.puts post["full_name"].to_bold
           io.puts
-          io.puts post["body_md"]
+          io.puts decorate.call(post["body_md"])
         end
       when 0x71 # q
         return

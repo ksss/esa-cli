@@ -3,6 +3,7 @@
 # License: MIT
 
 require 'io/console'
+require 'optparse'
 require 'esa'
 
 class String
@@ -30,15 +31,30 @@ class CLI
     puts @client.public_send(*args).body.to_json
   end
 
+  ViewOption = Struct.new(
+    :page,
+    :per_page,
+  )
   def view(*args)
+    vo = ViewOption.new(
+      1,
+      20,
+    )
+    OptionParser.new do |opt|
+      opt.on('--page NUM', 'page number (default 1)', Integer) do |arg|
+        vo.page = arg
+      end
+      opt.on('--per-page NUM', 'page size (default 20)', Integer) do |arg|
+        vo.per_page = arg
+      end
+    end.parse!(args)
     @client.current_team = args.shift if args.empty?.!
     cache = []
-    page = Page.new(1, 30)
 
     posts = lines = off = nil
     refresh = lambda do
-      cache[page.page] = fetch_posts(page) if cache[page.page].nil?
-      posts = cache[page.page]
+      cache[vo.page] = fetch_posts(vo) if cache[vo.page].nil?
+      posts = cache[vo.page]
       max_screen_name_len = posts.map { |post| post["created_by"]["screen_name"].length }.max
       lines = posts.map do |post|
         sprintf("%#{max_screen_name_len}s: %s", post["created_by"]["screen_name"], post["name"])
@@ -75,10 +91,10 @@ class CLI
       when 0x6b # k
         off -= 1 if 0 < off
       when 0x6c # l
-        page.page += 1
+        vo.page += 1
         refresh.call
       when 0x68 # h
-        page.page -= 1 if 0 < page.page
+        vo.page -= 1 if 0 < vo.page
         refresh.call
       when 0x0d # Enter
         post = posts[off]

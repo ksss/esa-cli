@@ -4,6 +4,7 @@
 
 require 'io/console'
 require 'optparse'
+require 'open-uri'
 require 'esa'
 
 class String
@@ -40,14 +41,14 @@ class CLI
       1,
       20,
     )
-    OptionParser.new do |opt|
+    OptionParser.new { |opt|
       opt.on('--page NUM', 'page number (default 1)', Integer) do |arg|
         vo.page = arg
       end
       opt.on('--per-page NUM', 'page size (default 20)', Integer) do |arg|
         vo.per_page = arg
       end
-    end.parse!(args)
+    }.parse!(args)
     @client.current_team = args.shift if args.empty?.!
     cache = []
 
@@ -62,16 +63,30 @@ class CLI
       off = 0
     end
     decorate = lambda do |md|
-      md.each_line.map do |line|
+      threads = []
+      results = []
+      md.each_line.each_with_index do |line, index|
         if /^#/ =~ line
-          line.to_bold
+          results[index] = line.to_bold
+        elsif m = /(\!\[.+\]\((.*)\))/.match(line)
+          threads << Thread.new(line, m) do |line, m|
+            img = IO.popen("imgcat", 'w+b') do |io|
+              io.print open(m[2], 'rb', &:read)
+              io.close_write
+              io.read
+            end
+            results[index] = line.sub(m[1], img)
+          end
+          results[index] = nil
         else
-          line
+          results[index] = line
         end
-      end.join("\n")
+      end
+      threads.each(&:join)
+      results.join("\n")
     end
     refresh.call
-    while true
+    loop do
       print "\e[0J".freeze
       buf = "#{HELP_LINE.to_bold}\n"
       lines.each_with_index do |line, i|
@@ -87,7 +102,7 @@ class CLI
       ch = $stdin.getch.ord
       case ch
       when 0x6a # j
-        off += 1 if off+1 < lines.length
+        off += 1 if off + 1 < lines.length
       when 0x6b # k
         off -= 1 if 0 < off
       when 0x6c # l
@@ -98,7 +113,7 @@ class CLI
         refresh.call
       when 0x0d # Enter
         post = posts[off]
-        IO.popen("less -R", "w") do |io|
+        IO.popen("less -r", "w") do |io|
           io.puts post["url"]
           io.puts post["full_name"].to_bold
           io.puts

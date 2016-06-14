@@ -35,11 +35,13 @@ class CLI
   ViewOption = Struct.new(
     :page,
     :per_page,
+    :raw,
   )
   def view(*args)
     vo = ViewOption.new(
       1,
       20,
+      false,
     )
     OptionParser.new { |opt|
       opt.on('--page NUM', 'page number (default 1)', Integer) do |arg|
@@ -47,6 +49,9 @@ class CLI
       end
       opt.on('--per-page NUM', 'page size (default 20)', Integer) do |arg|
         vo.per_page = arg
+      end
+      opt.on('-r', '--raw', 'show raw markdown mode (default false)') do |arg|
+        vo.raw = arg
       end
     }.parse!(args)
     @client.current_team = args.shift if args.empty?.!
@@ -69,15 +74,19 @@ class CLI
         if /^#/ =~ line
           results[index] = line.to_bold
         elsif m = /(\!\[.+\]\((.*)\))/.match(line)
-          threads << Thread.new(line, m) do |line, m|
-            img = IO.popen("imgcat", 'w+b') do |io|
-              io.print open(m[2], 'rb', &:read)
-              io.close_write
-              io.read
+          if vo.raw
+            results[index] = line
+          else
+            threads << Thread.new(line, m) do |line, m|
+              img = IO.popen("imgcat", 'w+b') do |io|
+                io.print open(m[2], 'rb', &:read)
+                io.close_write
+                io.read
+              end
+              results[index] = line.sub(m[1], img)
             end
-            results[index] = line.sub(m[1], img)
+            results[index] = nil
           end
-          results[index] = nil
         else
           results[index] = line
         end

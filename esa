@@ -29,7 +29,10 @@ class CLI
   end
 
   def api(*args)
-    puts @client.public_send(*args).body.to_json
+    method, params_str, header_str = *args
+    params = params_str ? params_str.split('&').map { |i| i.split('=') }.to_h : nil
+    header = header_str ? header_str.split('&').map { |i| i.split('=') }.to_h : nil
+    puts @client.public_send(method, params, header).body.to_json
   end
 
   ViewOption = Struct.new(

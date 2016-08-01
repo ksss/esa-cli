@@ -25,7 +25,16 @@ class CLI
   HELP_LINE = "j:down, k:up, l: next, h: back, Enter:show, q: quit"
 
   def run(argv)
-    public_send(*argv)
+    if 0 < argv.length && respond_to?(argv[0])
+      public_send(*argv)
+    else
+      usage
+    end
+  end
+
+  def usage
+    puts "esa [api|view] [option]"
+    exit 0
   end
 
   def api(*args)
